@@ -522,8 +522,8 @@ public class VideoConverter  implements Runnable {
         //log.debug("consultando origen " + img.getAbsolutePath());
 
         //final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_WEST_2).build();
-        final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_WEST_2).withCredentials(new AWSStaticCredentialsProvider(
-    			new BasicAWSCredentials(s3User, s3Password))).build();
+        final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+    			new BasicAWSCredentials(s3User, s3Password))).withRegion(Regions.EU_WEST_2).build();
 
         //s3.putObject(BUCKET_NAME, idObjectImg, img);
         s3.putObject(new PutObjectRequest(BUCKET_NAME, idObjectImg, img)
