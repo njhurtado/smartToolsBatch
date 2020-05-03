@@ -312,12 +312,12 @@ public class VideoConverter  implements Runnable {
             try {
             	//log.debug("id archivo : " + id);
                 //log.debug("indexImagenes :" + indexImagenes);
-                //log.debug("Se va a descargar el video: " + design.getOriginalVideoPath());
-                //log.debug("A la ruta local :" + rutaArchivoOrigLocal);
+                log.debug("Se va a descargar el video: " + design.getOriginal_video_path());
+                log.debug("A la ruta local :" + rutaArchivoOrigLocal);
                 
                 getFileFromS3(design.getOriginal_video_path(), rutaArchivoOrigLocal);
 
-                //log.debug("Se descarga el video a :" + rutaArchivoOrigLocal);
+                log.debug("Se descarga el video a :" + rutaArchivoOrigLocal);
 
                 //hay que consultar la base de datos
                 //log.debug("Se va a consutlar el video: "+design.get_id()+":"+design.getCreateDate());
