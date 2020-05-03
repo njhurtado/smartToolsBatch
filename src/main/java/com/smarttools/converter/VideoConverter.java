@@ -29,13 +29,14 @@ import com.mongodb.DBCollection;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.net.URL;
 import java.sql.PreparedStatement;
@@ -76,9 +77,7 @@ public class VideoConverter  implements Runnable {
     
 
     private static String remitente;
-    private static Session session;
-    private static Transport transport;
-
+    
     private static StringBuilder template = new StringBuilder();
     private static boolean isWindows;
 
@@ -93,7 +92,6 @@ public class VideoConverter  implements Runnable {
         isWindows = System.getProperty("os.name").startsWith("Windows");
 
         dbConnection = DBConnection.getInstance();
-        mailPassword = System.getProperty("emailPwd");
         rutaArchivos = dbConnection.readProperties("rutaBaseServidor");
         BUCKET_NAME = dbConnection.readProperties("smarttools.s3.bucketName");
         QUEUE_NAME = dbConnection.readProperties("smarttools.sqs.queueName");
@@ -103,14 +101,15 @@ public class VideoConverter  implements Runnable {
         
         
         //dominioEmpresa = System.getProperty("dominioEmpresa");
-        mailUser = System.getProperty("emailUsr");
+        mailUser = System.getenv("SENDGRID_USERNAME");
+        mailPassword = System.getenv("SENDGRID_PASSWORD");
         //rutaBaseProyecto = dbConnection.readProperties("rutaBaseProyecto");
-        sqsUser = System.getProperty("sqsUsr");
-        sqsPassword = System.getProperty("sqsPwd");
-        s3User = System.getProperty("s3Usr");
-        s3Password = System.getProperty("s3Pwd");
-        mongoUsr = System.getProperty("mongoUsr");
-        mongoPwd = System.getProperty("mongoPwd");
+        sqsUser = System.getenv("SQS_USERNAME");
+        sqsPassword = System.getenv("SQS_PASSWORD");
+        s3User = System.getenv("S3_USERNAME");
+        s3Password = System.getenv("S3_PASSWORD");
+        mongoUsr = System.getenv("MONGO_USERNAME");
+        mongoPwd = System.getenv("MONGO_PASSWORD");
         
         File procesados = new File(rutaArchivos);
         //log.info("Test de existencia: " + procesados.getAbsolutePath());
@@ -137,7 +136,7 @@ public class VideoConverter  implements Runnable {
             throw new ExceptionInInitializerError(e);
         }
         remitente = from;  //Para la dirección nomcuenta@gmail.com
-        Properties props = System.getProperties();
+        /*Properties props = System.getProperties();
         System.out.println("host -> " + host);
         System.out.println("remitente -> " + remitente);
         props.put("mail.smtp.host", host);  //El servidor SMTP de Google
@@ -153,7 +152,7 @@ public class VideoConverter  implements Runnable {
             transport.connect(host, mailUser, mailPassword);
         } catch (Exception e) {
             throw new ExceptionInInitializerError(e);
-        }
+        }*/
     }
 
 
@@ -551,49 +550,38 @@ public class VideoConverter  implements Runnable {
 
         Runnable r = () -> {
             //log.debug("Enviando correo a..." + emailAddress);
-            MimeMessage message = new MimeMessage(session);
             //log.debug("Desde.." + remitente);
             try {
-                message.setFrom(new InternetAddress(remitente));
-                message.addRecipients(Message.RecipientType.TO, emailAddress);   //Se podrían añadir varios de la misma manera
-                message.setSubject(mailSubject);
-                message.setContent(template.toString().replace(":url", urlProyecto), "text/html; charset=ISO-8859-1");
+            	Email from = new Email(remitente);
+                String subject = mailSubject;
+                Email to = new Email(emailAddress);
+                Content content = new Content("text/html", template.toString().replace(":url", urlProyecto));
+                Mail mail = new Mail(from, subject, to, content);
+
+                SendGrid sg = new SendGrid(System.getenv("SENDGRID_API_KEY"));
+                Request request = new Request();
                 
                 synchronized (lock) {
-                	int tiempo = 5000;
-                    if (!transport.isConnected()) {
-                        log.warn("Se perdio la conexion!!!");
-                        try {
-                            //log.info("Esperando " + tiempo / 1000 + " segundos...");
-                            //wait(tiempo);
-                            tiempo += tiempo;
-                            //log.info("Intentando conectar....");
-                            transport.connect(host, mailUser, mailPassword);
-                        } catch (Exception e) {
-                            log.error("Error esperando 1 seg. ", e);
-                            e.printStackTrace();
-                            throw e;
-                        }
-
-                    }
+                	request.setMethod(Method.POST);
+                    request.setEndpoint("mail/send"); 
+                    request.setBody(mail.build());
+                    Response response = sg.api(request);
+                    System.out.println(response.getStatusCode());
+                    System.out.println(response.getBody());
+                    System.out.println(response.getHeaders());
 
                 }
                 
-                if(transport.isConnected()) {
-                	//log.debug("Hay conexion para enviar correos .." );
-                	transport.sendMessage(message, message.getAllRecipients());
-                }
                 
             } catch (IllegalStateException e) {
             	e.printStackTrace();
                 log.error("Error: ", e);
 
 
-            } catch (MessagingException me) {
-            	me.printStackTrace();
-                log.error("Error: ", me);
-
-            }
+            } catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
         };
 
         Thread th = new Thread(r);
