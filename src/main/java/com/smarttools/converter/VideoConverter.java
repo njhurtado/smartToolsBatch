@@ -522,16 +522,26 @@ public class VideoConverter  implements Runnable {
         //log.debug("consultando origen " + img.getAbsolutePath());
 
         //final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_WEST_2).build();
-        final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-    			new BasicAWSCredentials(s3User, s3Password))).withRegion(Regions.EU_WEST_2).build();
+        //final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+    	//		new BasicAWSCredentials(s3User, s3Password))).build();
 
         //s3.putObject(BUCKET_NAME, idObjectImg, img);
-        s3.putObject(new PutObjectRequest(BUCKET_NAME, idObjectImg, img)
-        	      .withCannedAcl(CannedAccessControlList.PublicRead));
+        //s3.putObject(new PutObjectRequest(BUCKET_NAME, idObjectImg, img)
+        //	      .withCannedAcl(CannedAccessControlList.PublicRead));
+
+        //log.debug("fin de la publicación");
+        
+        //log.debug("se va a guardar el objeto " + BUCKET_NAME + ":" + idObjectImg);
+        //log.debug("consultando origen " + img.getAbsolutePath());
+
+        final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.DEFAULT_REGION).build();
+
+        s3.putObject(BUCKET_NAME, idObjectImg, img);
 
         //log.debug("fin de la publicación");
         return s3.getUrl(BUCKET_NAME, idObjectImg).toExternalForm();
-
+        
+        //return s3.getUrl(BUCKET_NAME, idObjectImg).toExternalForm();
     }
 
     private void getFileFromS3(String imageUrl, String destinationFile) throws IOException {
