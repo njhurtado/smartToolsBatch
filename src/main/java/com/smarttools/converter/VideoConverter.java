@@ -117,6 +117,13 @@ public class VideoConverter  implements Runnable {
             log.info("No se encontró directorio y se va a crear: " + procesados.getAbsolutePath());
             procesados.mkdir();
         }
+        
+        File convertidos = new File(rutaArchivos.replaceAll("original", "convertido"));
+        //log.info("Test de existencia: " + procesados.getAbsolutePath());
+        if (!convertidos.exists()) {
+            log.info("No se encontró directorio y se va a crear: " + convertidos.getAbsolutePath());
+            convertidos.mkdir();
+        }
 
         comando = dbConnection.readProperties("comando");
         /*if (isWindows)
